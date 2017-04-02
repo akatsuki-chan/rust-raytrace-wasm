@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head></head>
+  <body>
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <script type="text/javascript">
+      var Module = {}
+
+      fetch('./trace.wasm')
+      .then((response) => response.arrayBuffer())
+      .then((wasm) => {
+        Module.wasmBinary = wasm;
+
+        var script = document.createElement('script');
+        script.src = "trace.js";
+        script.onload = function() {
+          var width = 300
+          var height = 300
+
+          // 文字列を出すだけ
+          var message = "wasm";
+          var buffer = Module._malloc(message.length);
+          Module.stringToUTF8(message, buffer, message.length+1) 
+          var test = Module.cwrap('hello', null, ['number', 'number']);
+          test(buffer, message.length);
+
+          /*
+          // Rust内でバッファー作って返すバージョン
+          var raytrace = Module.cwrap('raytrace1', null, ['number', 'number']);
+          var p = raytrace(width, height);
+          var heap = new Float32Array(Module.HEAPF32.buffer, p);
+          */
+          
+          // Javascript内でバッファー作ってデータをセットするバージョン
+          var buffer = Module._malloc(width*height*4); // 幅＊高さ＊RGBA
+          var raytrace = Module.cwrap('raytrace2', null, ['number', 'number', 'number']);
+          raytrace(width, height, buffer);
+
+          var heap = new Float32Array(Module.HEAPF32.buffer, buffer);
+          var canvas = document.querySelector("canvas");
+          var ctx = canvas.getContext("2d");
+          var bufs = ctx.createImageData(width, height);
+
+          for (var y = 0; y < height; y++) {
+            for (var x = 0; x < width; x++) {
+              var offset = x * 4 + y * 4 * width;
+              bufs.data[offset+0] = heap[offset+0]*255 // r
+              bufs.data[offset+1] = heap[offset+1]*255 // g
+              bufs.data[offset+2] = heap[offset+2]*255 // b
+              bufs.data[offset+3] = heap[offset+3]*255 // a
+            }
+          }
+
+          ctx.putImageData(bufs, 0, 0)
+        }
+
+        document.body.appendChild(script);
+      })
+    </script>
+  </body>
+</html>
