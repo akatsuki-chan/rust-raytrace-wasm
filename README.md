@@ -19,3 +19,17 @@ $ make server
 
 ↑でサーバー起動後に、127.0.0.1:8000で確認。
 （要webassemblyが利用できるブラウザ）
+
+## EXPORTED FUNCTIONS
+
+- hello
+
+ブラウザのconsoleにメッセージ出すだけ
+
+- raytrace1
+
+rustでメモリ作ってレンダリングするバージョン
+
+- raytrace2
+
+javascriptでメモリ確保してレンダリングするバージョン
